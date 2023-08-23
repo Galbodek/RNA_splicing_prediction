@@ -13,6 +13,33 @@ pretrained_model_name = 'hyenadna-medium-450k-seqlen'
 max_length = 450_000
 
 
+def define_experiment(args):
+    experiment = Experiment(api_key="OUSdYva9STAffLftJFYaSyah4", project_name="splicing")
+    experiment.add_tags(args.tags.split(','))
+    parameters = {'batch_size': args.batch_size, 'learning_rate': args.lr}
+    experiment.log_parameters(parameters, prefix='train')
+    return experiment
+
+
+def log_experiment(experiment, metrics, loss, step, epoch):
+    experiment.log_confusion_matrix(matrix=metrics['confusion_matrix'])
+    metrics['confusion_matrix'] = json.dumps(metrics['confusion_matrix'].tolist())
+    experiment.log_metrics(metrics, step=step, epoch=epoch)
+    experiment.log_metrics({"loss": loss}, step=step, epoch=epoch)
+
+
+def save_model(save_prefix, batch_num, epoch, device):
+    if save_prefix is not None:
+        model.eval()
+        save_path = f"{save_prefix}__epoch__{epoch}__iter__{batch_num}.sav"
+        model.cpu()
+        torch.save(model.state_dict(), save_path)
+        model.to(device)
+
+        # flip back to train mode
+        model.train()
+
+
 def main(args):
     # set the device
     device = args.device
@@ -20,26 +47,25 @@ def main(args):
     print(torch.cuda.is_available())
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device is: {device}")
+    save_prefix = f'{args.save_prefix}__{args.h_dim}__{args.num_layers}__{args.dropout}'
+
 
     # define experiment
-    experiment = Experiment(api_key="OUSdYva9STAffLftJFYaSyah4", project_name="splices")
-    experiment.add_tags(args.tags.split(','))
-    parameters = {'batch_size': args.batch_size, 'learning_rate': args.lr}
-    experiment.log_parameters(parameters, prefix='train')
-
-    save_iter = args.save_interval  # next save
+    experiment = define_experiment(args)
 
     # clear the cache
     clear_cache()
 
     model = MyHyenaDNA(pretrained_model_name, args.num_layers, args.h_dim, args.dropout).to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     tokenizer = CharacterTokenizer(characters=['A', 'C', 'G', 'T', 'N'],  # add DNA characters
         model_max_length=max_length)
+
     train_dataset, test_dataset, val_dataset = get_train_val_test(args.data_file, tokenizer)
     train_generator = torch.utils.data.DataLoader(train_dataset, shuffle=True, num_workers=0, batch_size=args.batch_size)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
     curr_step = 0
+    save_iter = args.save_interval  # next save
     for epoch in range(1, args.epochs + 1):
         print(f'----- starting epoch = {epoch} -----')
         # Training
@@ -54,20 +80,23 @@ def main(args):
 
             # clip the gradients if needed
             if not np.isinf(args.clip):
-                nn.utils.clip_grad_norm_(model.linear_relu_stack.parameters(), args.clip)
+                nn.utils.clip_grad_norm_(model.classification_head.parameters(), args.clip)
 
             # parameter update
             optimizer.step()
 
-            experiment.log_confusion_matrix(matrix=metrics['confusion_matrix'])
-            metrics['confusion_matrix'] = json.dumps(metrics['confusion_matrix'].tolist())
-            experiment.log_metrics(metrics, step=batch_num+curr_step, epoch=epoch)
-            experiment.log_metrics({"loss": loss_estimate}, step=batch_num+curr_step, epoch=epoch)
+            log_experiment(experiment, metrics, loss_estimate, batch_num + curr_step, epoch)
 
             # clear the cache
             clear_cache()
 
-        model.eval()
+            if batch_num == save_iter:
+                save_iter = save_iter + args.save_interval  # next save
+                save_model(save_prefix, batch_num, epoch, device)
+
+        curr_step += batch_num
+
+    experiment.end()
 
 
 if __name__ == '__main__':
