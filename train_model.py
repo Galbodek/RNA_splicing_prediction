@@ -1,16 +1,16 @@
+from comet_ml import Experiment
 from classification_model import MyHyenaDNA
 from HyenaDNA import CharacterTokenizer
 from create_dataset import get_train_val_test
 import torch
 import torch.nn as nn
 import numpy as np
-from comet_ml import Experiment
-from utilities import clear_cache, get_loss
+from utilities import clear_cache, get_loss, collate_batch
 import json
 
 
 pretrained_model_name = 'hyenadna-medium-450k-seqlen'
-max_length = 450_000
+max_length = 450000
 
 
 def define_experiment(args):
@@ -22,8 +22,8 @@ def define_experiment(args):
 
 
 def log_experiment(experiment, metrics, loss, step, epoch):
-    experiment.log_confusion_matrix(matrix=metrics['confusion_matrix'])
-    metrics['confusion_matrix'] = json.dumps(metrics['confusion_matrix'].tolist())
+    experiment.log_confusion_matrix(matrix=metrics.pop('confusion_matrix'), step=step, epoch=epoch)
+    # metrics['confusion_matrix'] = json.dumps(metrics['confusion_matrix'].tolist())
     experiment.log_metrics(metrics, step=step, epoch=epoch)
     experiment.log_metrics({"loss": loss}, step=step, epoch=epoch)
 
@@ -56,13 +56,15 @@ def main(args):
     # clear the cache
     clear_cache()
 
-    model = MyHyenaDNA(pretrained_model_name, args.num_layers, args.h_dim, args.dropout).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    model = MyHyenaDNA(pretrained_model_name, device, args.num_layers, args.h_dim, args.dropout).to(device)
+    params = [p for p in model.parameters() if p.requires_grad]
+    print(f"Total number of parameters in model: {sum(p.numel() for p in params)}")
+    optimizer = torch.optim.AdamW(params, lr=args.lr, weight_decay=args.weight_decay)
     tokenizer = CharacterTokenizer(characters=['A', 'C', 'G', 'T', 'N'],  # add DNA characters
-        model_max_length=max_length)
+                                   model_max_length=max_length + 2,  # to account for special tokens, like EOS
+                                   add_special_tokens=False)  # we handle special tokens elsewhere
 
-    train_dataset, test_dataset, val_dataset = get_train_val_test(args.data_file, tokenizer)
-    train_generator = torch.utils.data.DataLoader(train_dataset, shuffle=True, num_workers=0, batch_size=args.batch_size)
+    train_dataset, test_dataset, val_dataset = get_train_val_test(args.data_file, tokenizer, device, max_length)
 
     curr_step = 0
     save_iter = args.save_interval  # next save
@@ -70,7 +72,11 @@ def main(args):
         print(f'----- starting epoch = {epoch} -----')
         # Training
         model.train()
+        train_dataset.set_epoch(epoch) # Shuffling data for each epoch
+        train_generator = torch.utils.data.DataLoader(train_dataset, num_workers=0, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer))
         for batch_num, (x, y) in enumerate(train_generator):
+            # clear the cache
+            clear_cache()
             loss, metrics = get_loss(model, x, y, device)
 
             # Backpropagation
