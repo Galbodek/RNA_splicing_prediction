@@ -12,17 +12,12 @@ class ClassificationDataset(torch.utils.data.IterableDataset):
         X, y = torch.Tensor(example['input_ids']).squeeze(0).to(dtype=torch.int32), torch.LongTensor(example['labels']).squeeze(0)
         return X, y
 
-    def yield_example(self):
-        for example in self.dataset:
-            yield self.__process_example(example)
-
     def __getitem__(self, idx):
         return self.__process_example(self.dataset[idx])
 
     def __iter__(self):
         for example in self.dataset:
             yield self.__process_example(example)
-        # return iter(self.dataset)
 
     # def __len__(self):
     #     return len(self.dataset)
@@ -58,7 +53,7 @@ def encode(data, tokenizer, max_length):
     return {'input_ids': input, 'labels': torch.LongTensor(data['coding_seq'])}
 
 
-def get_train_val_test(data_dir, tokenizer, device, max_length):
+def get_train_val_test(data_dir, tokenizer, max_length):
     file_mapping = {'train': glob.glob(f"{data_dir}/train_data_file_*.json"), 'test': glob.glob(f"{data_dir}/test_data_file_*.json"), "valid":glob.glob(f"{data_dir}/val_data_file_*.json")}
     dataset = load_dataset('json', data_files=file_mapping, cache_dir="./cache", field='data', streaming=True)
     # dataset = split_dataset(dataset)

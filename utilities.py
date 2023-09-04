@@ -16,14 +16,12 @@ def collate_batch(batch, tokenizer):
     # now sort text before padding
     lengths = [len(s) for s in seqs]
     sorted_inds = list(np.argsort(lengths)[::-1])
-    seqs = [seqs[i] for i in sorted_inds]  # sort in descending order for batching
     clear_cache()
-    # padding to the left - reverse the list and create tensors, pad and flip
-    seqs = pad_sequence([i.flip(dims=[0]) for i in seqs], batch_first=True, padding_value=tokenizer.pad_token_id).flip(dims=[1])
-    labels = [labels[i] for i in sorted_inds]
+    # sort in descending order for batching, padding to the left - reverse the list and create tensors, pad and flip
+    seqs = pad_sequence([seqs[i].flip(dims=[0]) for i in sorted_inds], batch_first=True, padding_value=tokenizer.pad_token_id).flip(dims=[1])
 
-    # padding to the left - reverse the list and create tensors, pad and flip
-    labels = pad_sequence([i.flip(dims=[0]) for i in labels], batch_first=True).flip(dims=[1])
+    # sort in descending order for batching, padding to the left - reverse the list and create tensors, pad and flip
+    labels = pad_sequence([labels[i].flip(dims=[0]) for i in sorted_inds], batch_first=True).flip(dims=[1])
     return seqs, labels
 
 
