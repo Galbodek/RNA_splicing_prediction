@@ -21,6 +21,7 @@ def fftconv(u, k, D):
     seqlen = u.shape[-1]
     fft_size = 2 * seqlen
 
+    torch.cuda.empty_cache()
     k_f = torch.fft.rfft(k, n=fft_size) / fft_size
     u_f = torch.fft.rfft(u.to(dtype=k.dtype), n=fft_size)
 

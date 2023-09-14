@@ -21,4 +21,4 @@ export CUDA_DEVICE_ORDER=PCI_BUS_ID
 # ###############export CUDA_VISIBLE_DEVICES=4
 
 
-python "/sternadi/nobackup/volume1/ellarannon/splicing/train_model.py" --data_file "/sternadi/nobackup/volume1/ellarannon/splicing/data" --dropout 0.1 -e 3 --save-prefix "/sternadi/nobackup/volume1/ellarannon/splicing/hyena_model_"  --batch_size 4 --h_dim 128 #--device 4
+python "/sternadi/nobackup/volume1/ellarannon/splicing/train_model.py" --data_file "/sternadi/nobackup/volume1/ellarannon/splicing/data" --dropout 0.1 -e 10 --save-prefix "/sternadi/nobackup/volume1/ellarannon/splicing/hyena_model_"  --batch_size 1 --h_dim 128 --device 4 --num_layers 3 -ac 16 --lr 0.000001

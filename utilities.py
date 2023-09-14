@@ -29,7 +29,7 @@ def compute_metrics(y, y_prob):
     _, y_pred = torch.max(y_prob, 1)
     acc = balanced_accuracy_score(y, y_pred)
     roc = roc_auc_score(y, y_prob[:, 1])
-    precision, recall, f1, _ = precision_recall_fscore_support(y, y_pred)
+    precision, recall, f1, _ = precision_recall_fscore_support(y, y_pred, zero_division=1.0)
     cm = confusion_matrix(y, y_pred)
     return {
         'accuracy': acc,
