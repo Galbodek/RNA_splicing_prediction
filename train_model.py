@@ -54,7 +54,13 @@ def main(args):
     # clear the cache
     clear_cache()
 
-    model = MyHyenaDNA(pretrained_model_name, device, args.num_layers, args.h_dim, args.dropout).to(device)
+    # initialize the model
+    if args.model is not None:
+        # load pretrained model
+        model = torch.load(args.model)
+    else:
+        model = MyHyenaDNA(pretrained_model_name, device, args.num_layers, args.h_dim, args.dropout).to(device)
+    
     params = [p for p in model.parameters() if p.requires_grad]
     print(f"Total number of parameters in model: {sum(p.numel() for p in params)}")
     optimizer = torch.optim.AdamW(params, lr=args.lr, weight_decay=args.weight_decay)
@@ -112,6 +118,7 @@ if __name__ == '__main__':
     # training dataset
     parser.add_argument('--data_file', default='', help='path to the dataset train')
     # embedding model architecture
+    parser.add_argument('model', nargs='?', help='pretrained model (optional)')
     parser.add_argument('--h_dim', type=int, default=128, help='dimension of hidden units of first linear layer')
     parser.add_argument('--num_layers', type=int, default=2, help='number of linear layers')
     parser.add_argument('--dropout', type=float, default=0.3, help='dropout rate')
