@@ -9,8 +9,8 @@ from utilities import clear_cache, get_loss, collate_batch
 import json
 
 
-pretrained_model_name = 'hyenadna-medium-450k-seqlen'
-max_length = 450000
+pretrained_model_name = 'hyenadna-medium-160k-seqlen'
+max_length = 160000
 
 
 def define_experiment(args):
@@ -28,7 +28,7 @@ def log_experiment(experiment, metrics, loss, step, epoch):
     experiment.log_metrics({"loss": loss}, step=step, epoch=epoch)
 
 
-def save_model(save_prefix, batch_num, epoch, device):
+def save_model(model, save_prefix, batch_num, epoch, device):
     if save_prefix is not None:
         model.eval()
         save_path = f"{save_prefix}__epoch__{epoch}__iter__{batch_num}.sav"
@@ -62,43 +62,47 @@ def main(args):
                                    add_special_tokens=False)  # we handle special tokens elsewhere
 
     train_dataset, test_dataset, val_dataset = get_train_val_test(args.data_file, tokenizer, max_length)
-
+    train_generator = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer))
     curr_step = 0
     save_iter = args.save_interval  # next save
     for epoch in range(1, args.epochs + 1):
         print(f'----- starting epoch = {epoch} -----')
         # Training
         model.train()
-        train_dataset.set_epoch(epoch) # Shuffling data for each epoch
-        train_generator = torch.utils.data.DataLoader(train_dataset, num_workers=0, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer))
+        # train_dataset.set_epoch(epoch) # Shuffling data for each epoch
         for batch_num, (x, y) in enumerate(train_generator):
             # clear the cache
             clear_cache()
             loss, metrics = get_loss(model, x, y, device)
+            loss = loss / args.accum_iter # normalize loss to account for batch accumulation
+
 
             # Backpropagation
-            optimizer.zero_grad()
             loss.backward()
             loss_estimate = loss.item()
+
+
+             # weights update
+            if ((batch_num + 1) % args.accum_iter == 0) or (batch_num + 1 == len(train_generator)):
+                optimizer.step()
+                optimizer.zero_grad()
 
             # clip the gradients if needed
             if not np.isinf(args.clip):
                 nn.utils.clip_grad_norm_(model.classification_head.parameters(), args.clip)
 
-            # parameter update
-            optimizer.step()
-
-            log_experiment(experiment, metrics, loss_estimate, batch_num + curr_step, epoch)
+            log_experiment(experiment, metrics, loss_estimate*args.accum_iter, batch_num + curr_step, epoch)
 
             # clear the cache
             clear_cache()
 
             if batch_num == save_iter:
                 save_iter = save_iter + args.save_interval  # next save
-                save_model(save_prefix, batch_num, epoch, device)
+                save_model(model, save_prefix, batch_num, epoch, device)
 
         curr_step += batch_num
 
+    save_model(model, save_prefix, batch_num, epoch, device)
     experiment.end()
 
 
@@ -113,8 +117,9 @@ if __name__ == '__main__':
     parser.add_argument('--dropout', type=float, default=0.3, help='dropout rate')
     # training parameters
     parser.add_argument('-e', '--epochs', type=int, default=3, help='number of training epochs.')
-    parser.add_argument('--save-interval', type=int, default=100000, help='number of step between data saving')
+    parser.add_argument('--save-interval', type=int, default=1000, help='number of step between data saving')
     parser.add_argument('--batch_size', type=int, default=64, help='minibatch size')
+    parser.add_argument('-ac', '--accum_iter', type=int, default=16, help='number of batches we calculate before updating gradients.')
     parser.add_argument('--weight_decay', type=float, default=0, help='L2 regularization (default: 0)')
     parser.add_argument('--lr', type=float, default=0.00001, help='learning rate (default: 1e-4)')
     parser.add_argument('--clip', type=float, default=np.inf, help='gradient clipping max norm (default: inf)')
