@@ -2,6 +2,10 @@ from datasets import load_dataset, DatasetDict
 import torch.nn as nn
 import torch
 import glob
+import os
+
+
+PROJECT_DIR = '/sternadi/nobackup/volume1/ellarannon/splicing/'
 
 
 class ClassificationDataset(torch.utils.data.IterableDataset):
@@ -19,11 +23,11 @@ class ClassificationDataset(torch.utils.data.IterableDataset):
         for example in self.dataset:
             yield self.__process_example(example)
 
-    # def __len__(self):
-    #     return len(self.dataset)
+    def __len__(self):
+        return len(self.dataset)
 
-    def set_epoch(self, epoch):
-        self.dataset.set_epoch(epoch)
+    # def set_epoch(self, epoch):
+    #     self.dataset.set_epoch(epoch)
 
 
 def split_dataset(dataset):
@@ -50,12 +54,12 @@ def encode(data, tokenizer, max_length):
     # # adding padding (to max len) to the left like the tokenizer
     # output = nn.ConstantPad1d((max_length - len(data['coding_seq']), 0), 0)(torch.LongTensor(data['coding_seq']))
     # return {'input_ids': input, 'labels': output}
-    return {'input_ids': input, 'labels': torch.LongTensor(data['coding_seq'])}
+    return {'input_ids': input, 'labels': torch.LongTensor(data['coding_seq'][:max_length])}
 
 
 def get_train_val_test(data_dir, tokenizer, max_length):
     file_mapping = {'train': glob.glob(f"{data_dir}/train_data_file_*.json"), 'test': glob.glob(f"{data_dir}/test_data_file_*.json"), "valid":glob.glob(f"{data_dir}/val_data_file_*.json")}
-    dataset = load_dataset('json', data_files=file_mapping, cache_dir="./cache", field='data', streaming=True)
+    dataset = load_dataset('json', data_files=file_mapping, cache_dir=os.path.join(PROJECT_DIR, "cache"), field='data') # , streaming=True
     # dataset = split_dataset(dataset)
     train = dataset['train'].map(lambda x: encode(x, tokenizer, max_length), remove_columns=['unspliced_transcript', 'coding_seq'])
     test = dataset['test'].map(lambda x: encode(x, tokenizer, max_length), remove_columns=['unspliced_transcript', 'coding_seq'])
