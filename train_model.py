@@ -11,6 +11,7 @@ import json
 
 pretrained_model_name = 'hyenadna-medium-160k-seqlen'
 max_length = 160000
+class_weights = [1.136, 8.34] # The median of exon proportion is ~12%, therefore weights is 1/0.88 and 1/0.12
 
 
 def define_experiment(args):
@@ -46,6 +47,7 @@ def main(args):
     device = torch.device(f"cuda:{args.device}" if torch.cuda.is_available() and args.device != -1 else "cpu")
     print(f"Device is: {device}")
     save_prefix = f'{args.save_prefix}__{args.h_dim}__{args.num_layers}__{args.dropout}'
+    weights = torch.tensor(class_weights).to(device)
 
 
     # define experiment
@@ -57,7 +59,8 @@ def main(args):
     # initialize the model
     if args.model is not None:
         # load pretrained model
-        model = torch.load(args.model)
+        model = MyHyenaDNA.load_pretrained(args.model, pretrained_model_name, device)
+        model = model.to(device)
     else:
         model = MyHyenaDNA(pretrained_model_name, device, args.num_layers, args.h_dim, args.dropout).to(device)
     
@@ -79,7 +82,7 @@ def main(args):
         for batch_num, (x, y) in enumerate(train_generator):
             # clear the cache
             clear_cache()
-            loss, metrics = get_loss(model, x, y, device)
+            loss, metrics = get_loss(model, x, y, weights, device)
             loss = loss / args.accum_iter # normalize loss to account for batch accumulation
 
 

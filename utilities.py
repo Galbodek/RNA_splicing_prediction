@@ -46,12 +46,12 @@ def clear_cache():
     torch.cuda.empty_cache()
 
 
-def get_loss(model, x, y, device):
+def get_loss(model, x, y,  weights, device):
     clear_cache()
     x, y = x.to(device), y.to(device)
     logits = model(x).to(device)
     y = y.view((y.shape[0] * y.shape[1]))
     logits = logits.view((logits.shape[0] * logits.shape[1], logits.shape[2]))
-    loss = F.cross_entropy(logits, y)
+    loss = F.cross_entropy(logits, y,  weight=weights)
     metrics = compute_metrics(y.cpu().detach(), logits.cpu().detach())
     return loss, metrics

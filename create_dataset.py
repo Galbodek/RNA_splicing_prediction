@@ -66,3 +66,11 @@ def get_train_val_test(data_dir, tokenizer, max_length):
     val = dataset['valid'].map(lambda x: encode(x, tokenizer, max_length), remove_columns=['unspliced_transcript', 'coding_seq'])
     train_dataset, test_dataset, val_dataset = ClassificationDataset(train), ClassificationDataset(test), ClassificationDataset(val)
     return train_dataset, test_dataset, val_dataset
+
+
+def get_test(data_dir, tokenizer, max_length):
+    file_mapping = {'test': glob.glob(f"{data_dir}/test_data_file_*.json")}
+    dataset = load_dataset('json', data_files=file_mapping, cache_dir=os.path.join(PROJECT_DIR, "cache"), field='data') # , streaming=True
+    test = dataset['test'].map(lambda x: encode(x, tokenizer, max_length), remove_columns=['unspliced_transcript', 'coding_seq'])
+    test_dataset = ClassificationDataset(test)
+    return test_dataset
