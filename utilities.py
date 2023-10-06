@@ -26,7 +26,8 @@ def collate_batch(batch, tokenizer):
     return seqs, labels
 
 
-def compute_metrics(y, y_prob):
+def compute_metrics(y, logits):
+    y_prob = torch.softmax(logits, dim=2)
     _, y_pred = torch.max(y_prob, 1)
     if len(torch.unique(y)) == 1:
         roc, precision, recall, f1 = 0.0, 0.0, 0.0, 0.0

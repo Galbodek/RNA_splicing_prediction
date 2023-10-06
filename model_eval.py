@@ -1,10 +1,13 @@
 import argparse
 import torch
 import pickle
+import os
 import numpy as np
 from classification_model import MyHyenaDNA
+from HyenaDNA import CharacterTokenizer
 from torch.utils.data import DataLoader
-from train_model import class_weights, pretrained_model_name, max_length
+from train_model import pretrained_model_name, max_length
+from create_dataset import get_test
 from utilities import get_loss, collate_batch, clear_cache
 
 
@@ -38,8 +41,8 @@ def main(args):
         test_generator = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer))
         for batch_num, (x, y) in enumerate(test_generator):
             logits = model(x.to(device)).cpu()
-            y_probs = softmax(logits)
-            all_y.append(y.data.numpy())
+            y_probs = softmax(logits, dim=2)
+            all_y.append(y.numpy())
             all_y_probs.append(y_probs.numpy())
 
         labels = np.concatenate(all_y)
