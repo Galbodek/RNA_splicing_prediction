@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader, WeightedRandomSampler
 import torch.nn as nn
 import numpy as np
-from utilities import clear_cache, get_loss, collate_batch
+from utilities import clear_cache, get_loss, collate_batch, compute_metrics
 import json
 
 
@@ -39,6 +39,21 @@ def save_model(model, save_prefix, batch_num, epoch, device):
 
         # flip back to train mode
         model.train()
+
+
+def run_model_on_val(model, dataset, device, batch_size, tokenizer):
+    model.eval()
+    all_y, all_logits = [] , []
+    data_generator = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda b: collate_batch(b, tokenizer))
+    for batch_num, (x, y) in enumerate(data_generator):
+        logits = model(x.to(device)).cpu()
+        all_y.append(y.cpu().detach())
+        all_logits.append(logits.cpu().detach())
+
+    labels = np.concatenate(all_y)
+    logits = np.concatenate(all_logits)
+    print(compute_metrics(labels, logits))
+    model.train()
 
 
 def main(args):
@@ -117,7 +132,9 @@ def main(args):
 
         curr_step += batch_num
 
-    # TODO add check on validation set
+    # Running Model On Validation Set
+    run_model_on_val(model, val_dataset, device, args.batch_size, tokenizer)
+
     save_model(model, save_prefix, batch_num, epoch, device)
     experiment.end()
 
