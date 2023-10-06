@@ -31,7 +31,7 @@ def main(args):
     for dir_path in args.data_dirs:
         dir_name = os.path.split(dir_path)[-1]
         species, length = dir_name.split("_")[1:3]
-        model = load_model(f"{args.model_prefix}__{length}.sav", device)
+        model = load_model(f"{length}__{args.model_prefix}.sav", device)
         all_y = []
         all_y_probs = []
         test_dataset = get_test(dir_path, tokenizer, max_length)

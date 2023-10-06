@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from HyenaDNA import HyenaDNAPreTrainedModel
 
-dir_path = '/sternadi/nobackup/volume1/ellarannon/splicing'
+dir_path = '/davidb/ellarannon/splicing/' # '/sternadi/nobackup/volume1/ellarannon/splicing'
 
 
 class MyHyenaDNA(PreTrainedModel):
@@ -26,7 +26,7 @@ class MyHyenaDNA(PreTrainedModel):
 
     def forward(self, x, **kwargs):
         # with torch.no_grad():
-        hidden_state = self.hynedaDNA(x)
+        hidden_state = torch.mean(self.hynedaDNA(x), dim=1)
         # h = self.lstm(self.dropout(hidden_state))[0]
         # outputs = self.proj(h)
         outputs = self.classification_head(hidden_state)

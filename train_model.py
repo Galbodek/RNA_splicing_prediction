@@ -3,6 +3,7 @@ from classification_model import MyHyenaDNA
 from HyenaDNA import CharacterTokenizer
 from create_dataset import get_train_val_test
 import torch
+from torch.utils.data import DataLoader, WeightedRandomSampler
 import torch.nn as nn
 import numpy as np
 from utilities import clear_cache, get_loss, collate_batch
@@ -11,7 +12,6 @@ import json
 
 pretrained_model_name = 'hyenadna-medium-160k-seqlen'
 max_length = 160000
-class_weights = [1.136, 8.34] # The median of exon proportion is ~12%, therefore weights is 1/0.88 and 1/0.12
 
 
 def define_experiment(args):
@@ -47,7 +47,6 @@ def main(args):
     device = torch.device(f"cuda:{args.device}" if torch.cuda.is_available() and args.device != -1 else "cpu")
     print(f"Device is: {device}")
     save_prefix = f'{args.save_prefix}__{args.h_dim}__{args.num_layers}__{args.dropout}'
-    weights = torch.tensor(class_weights).to(device)
 
 
     # define experiment
@@ -70,8 +69,15 @@ def main(args):
     tokenizer = CharacterTokenizer(characters=['A', 'C', 'G', 'T', 'N'], model_max_length=max_length + 2,  # to account for special tokens, like EOS
                                    add_special_tokens=False)  # we handle special tokens elsewhere
 
-    train_dataset, test_dataset, val_dataset = get_train_val_test(args.data_file, tokenizer, max_length)
-    train_generator = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer))
+    train_dataset, val_dataset, train_weights = get_train_val_test(args.data_file, tokenizer, max_length)
+    print(f"mean_percentage: {torch.mean(train_weights)}")
+    mean_percentage = 0.5 # min(torch.mean(train_weights) * 8, 0.5)  # reducing the effect on loss function
+    class_weights = [1/(1-mean_percentage), 1/mean_percentage] #[1.136, 8.34] # The median of exon proportion is ~12%, therefore weights is 1/0.88 and 1/0.12
+    class_weights = torch.tensor(class_weights).to(device)
+
+
+    sampler = WeightedRandomSampler(train_weights, len(train_dataset), replacement=False) # replacement=False
+    train_generator = DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer), sampler=sampler)
     curr_step = 0
     save_iter = args.save_interval  # next save
     for epoch in range(1, args.epochs + 1):
@@ -82,7 +88,7 @@ def main(args):
         for batch_num, (x, y) in enumerate(train_generator):
             # clear the cache
             clear_cache()
-            loss, metrics = get_loss(model, x, y, weights, device)
+            loss, metrics = get_loss(model, x, y, class_weights, device)
             loss = loss / args.accum_iter # normalize loss to account for batch accumulation
 
 
@@ -111,6 +117,7 @@ def main(args):
 
         curr_step += batch_num
 
+    # TODO add check on validation set
     save_model(model, save_prefix, batch_num, epoch, device)
     experiment.end()
 
