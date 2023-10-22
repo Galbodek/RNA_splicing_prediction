@@ -17,7 +17,7 @@ class MyHyenaDNA(PreTrainedModel):
         layers = [nn.Dropout(p=dropout)]
         for i in range(num_of_layers):
             layers.append(nn.Linear(dim, hidden_size))
-            layers.append(nn.ReLU())
+            layers.append(nn.LeakyReLU()) # ReLU # LeakyReLU
             layers.append(nn.Dropout(p=dropout))
             dim = hidden_size
             hidden_size = int(hidden_size / 2)
@@ -26,9 +26,10 @@ class MyHyenaDNA(PreTrainedModel):
 
     def forward(self, x, **kwargs):
         # with torch.no_grad():
+        # outputs = self.hynedaDNA(x)
         hidden_state = torch.mean(self.hynedaDNA(x), dim=1)
-        # h = self.lstm(self.dropout(hidden_state))[0]
-        # outputs = self.proj(h)
+        # # h = self.lstm(self.dropout(hidden_state))[0]
+        # # outputs = self.proj(h)
         outputs = self.classification_head(hidden_state)
         return outputs
 

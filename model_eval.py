@@ -41,7 +41,7 @@ def main(args):
         test_generator = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer))
         for batch_num, (x, y) in enumerate(test_generator):
             logits = model(x.to(device)).cpu()
-            y_probs = softmax(logits, dim=2)
+            y_probs = softmax(logits, dim=-1)
             all_y.append(y.numpy())
             all_y_probs.append(y_probs.numpy())
 

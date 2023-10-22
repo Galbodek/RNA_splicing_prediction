@@ -46,12 +46,12 @@ def run_model_on_val(model, dataset, device, batch_size, tokenizer):
     all_y, all_logits = [] , []
     data_generator = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda b: collate_batch(b, tokenizer))
     for batch_num, (x, y) in enumerate(data_generator):
-        logits = model(x.to(device)).cpu()
+        logits = model(x.to(device))
         all_y.append(y.cpu().detach())
         all_logits.append(logits.cpu().detach())
 
-    labels = np.concatenate(all_y)
-    logits = np.concatenate(all_logits)
+    labels = torch.concatenate(all_y, dim=0)
+    logits = torch.concatenate(all_logits, dim=0)
     print(compute_metrics(labels, logits))
     model.train()
 
@@ -91,7 +91,8 @@ def main(args):
     class_weights = torch.tensor(class_weights).to(device)
 
 
-    sampler = WeightedRandomSampler(train_weights, len(train_dataset), replacement=False) # replacement=False
+    n_iter = args.n_iter*args.batch_size if args.n_iter > 0 else len(train_dataset)
+    sampler = WeightedRandomSampler(train_weights, min(n_iter, len(train_dataset)), replacement=False) # len(train_dataset), replacement=False
     train_generator = DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer), sampler=sampler)
     curr_step = 0
     save_iter = args.save_interval  # next save
@@ -152,6 +153,7 @@ if __name__ == '__main__':
     # training parameters
     parser.add_argument('-e', '--epochs', type=int, default=3, help='number of training epochs.')
     parser.add_argument('--save-interval', type=int, default=1000, help='number of step between data saving')
+    parser.add_argument('--n_iter', type=int, default=0, help='number of batches to run per epoch. deafult: 0 (size of dataset)')
     parser.add_argument('--batch_size', type=int, default=64, help='minibatch size')
     parser.add_argument('-ac', '--accum_iter', type=int, default=16, help='number of batches we calculate before updating gradients.')
     parser.add_argument('--weight_decay', type=float, default=0, help='L2 regularization (default: 0)')
