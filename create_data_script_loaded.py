@@ -172,71 +172,6 @@ def get_num_samples(transcript_length, exons_list, current_exon):
     return num_exon_samples
 
 
-# def define_label(sequence, type_transition):
-#     if type_transition == 'donor':
-#         for i in range(1, len(sequence)):
-#             if sequence[i] == 1 and sequence[i - 1] == 0:
-#                 return 1
-#         return 0
-#     else:  # acceptor
-#         for i in range(1, len(sequence)):
-#             if sequence[i] == 0 and sequence[i - 1] == 1:
-#                 return 1
-#         return 0
-
-
-# def create_data(dataset, encoded_transcripts_dict, start_end_exons_all, seq_input_len, to_sample_len):
-#     """
-#     :param dataset: data of transcripts containes the 'unslipced_transcript'
-#     :param encoded_transcripts_dict: dictionary of transcript labels
-#     :param start_end_exons_all: dictionary of exons ranges per transcript
-#     :param seq_input_len: size of the sequence input given to the model
-#     :param to_sample_len: size of range to sample from around each exon
-#     :return: data = {transcript: [(seq, label)...], ...}
-#     """
-#     if seq_input_len > to_sample_len:
-#         raise ValueError("seq_input_len should be less than or equal to to_sample_len")
-#
-#     # seq_input_len has < to_sample_len
-#     # data = {transcript: [(seq, label)]}
-#     data_donor = {}
-#     data_acceptor = {}
-#
-#     for transcript in dataset.index:
-#         transcript_seq = dataset['unspliced_transcript'][transcript]
-#         transcript_labels = encoded_transcripts_dict[transcript]
-#         if len(transcript_seq) > seq_input_len:  # transcript is long enough
-#             data_donor[transcript] = []
-#             data_acceptor[transcript] = []
-#             # define range to sample around the current exon
-#             for i, exon in enumerate(start_end_exons_all[transcript]):
-#                 if exon[0] < to_sample_len:  # too close to the beginning of the transcript sequence
-#                     start = 0
-#                 else:
-#                     start = exon[0] - to_sample_len
-#                 if exon[1] + to_sample_len > len(transcript_seq) - 1:  # to close to the end of the transcript sequence
-#                     end = len(transcript_seq) - 1
-#                 else:
-#                     end = exon[1] + to_sample_len
-#                 range_to_sample = (start, end)
-#
-#                 # sample around the current exon
-#                 num_exon_samples = get_num_samples(len(transcript_seq), start_end_exons_all[transcript], exon)
-#                 for _ in range(num_exon_samples):
-#                     start_position = random.randint(range_to_sample[0], range_to_sample[1] - seq_input_len)
-#                     end_position = start_position + seq_input_len
-#                     seq = transcript_seq[start_position:end_position]
-#                     seq_labels = transcript_labels[start_position:end_position]
-#                     # donor model
-#                     label_donor = define_label(seq_labels, 'donor')
-#                     data_donor[transcript].append((seq, label_donor))
-#                     # acceptor model
-#                     label_acceptor = define_label(seq_labels, 'acceptor')
-#                     data_acceptor[transcript].append((seq, label_acceptor))
-#
-#     return data_donor, data_acceptor
-
-
 def create_data(dataset, encoded_transcripts_dict, start_end_exons_all,seq_input_len, to_sample_len):
     """
     :param dataset: data_for_model of transcripts containes the 'unslipced_transcript'
@@ -330,24 +265,6 @@ def model_data_to_json(model_data, data_info, json_path):
     return json_data
 
 
-# def subsets_to_json(encoded_transcripts_dict, length, filtered_data, json_path):
-#     json_data = []
-#     for transcript in encoded_transcripts_dict:
-#         # 'gene id is value 3'
-#         if len(encoded_transcripts_dict[transcript]) < length:
-#             continue
-#         gene_id = filtered_data.loc[transcript].values[3]
-#         subs_dict = create_random_subsets_by_length(encoded_transcripts_dict, length, transcript, filtered_data)
-#         for sub in subs_dict:
-#             json_dict = {'unspliced_transcript': sub,
-#                          'coding_seq': subs_dict[sub],
-#                          'gene_id': gene_id}
-#             json_data.append(json_dict)
-#     with open(json_path, "w") as final:
-#         json.dump(json_data, final)
-#     return json_data
-
-
 def load_obj(path):
     with open(path + '.pkl', 'rb') as f:
         return pickle.load(f)
@@ -390,17 +307,3 @@ if __name__ == '__main__':
     json_data = model_data_to_json(balanced_X, data_filtered_by_chromosome,
                                    f"../updated_data_by_len/human_data_{chosen_length}_{train_or_test}.json")
     print("converted to json file")
-
-    # X_donor, X_acceptor = create_data(data_filtered_by_chromosome, encoded_transcripts, start_end_exons_all,
-    #                                   seq_input_len=chosen_length, to_sample_len=chosen_length)
-    #
-    # for type_model, X in {'donor': X_donor, 'acceptor': X_acceptor}.items():
-    #     transformed_X = transform_data(X)
-    #     balanced_X = balance_data(transformed_X)
-    #     print(f"created data for model {type_model}")
-    #
-    #     json_data = model_data_to_json(balanced_X, data_filtered_by_chromosome,
-    #                                    f"donor_receptor_data/human_data_{type_model}_{chosen_length}_{train_or_test}.json")
-    #     # json_data = subsets_to_json(encoded_transcripts, chosen_length, data_filtered_by_chromosome,
-    #     #                             f"all_data_{chosen_length}_{train_or_test}.json")
-    #     print(f"converted to json file {type_model}")
