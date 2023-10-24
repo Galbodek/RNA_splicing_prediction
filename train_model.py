@@ -7,12 +7,10 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 import torch.nn as nn
 import numpy as np
 from utilities import clear_cache, get_loss, collate_batch, compute_metrics
-import json
 
 
 pretrained_model_name = 'hyenadna-medium-160k-seqlen'
-file_size = 5000
-n_files = 191 # number of file in the 10K case
+n_files = 191  # number of file in the 10K case
 max_length = 160000
 
 
@@ -26,7 +24,6 @@ def define_experiment(args):
 
 def log_experiment(experiment, metrics, step, epoch):
     experiment.log_confusion_matrix(matrix=metrics.pop('confusion_matrix'), step=step, epoch=epoch)
-    # metrics['confusion_matrix'] = json.dumps(metrics['confusion_matrix'].tolist())
     experiment.log_metrics(metrics, step=step, epoch=epoch)
 
 
@@ -85,15 +82,13 @@ def main(args):
     tokenizer = CharacterTokenizer(characters=['A', 'C', 'G', 'T', 'N'], model_max_length=max_length + 2,  # to account for special tokens, like EOS
                                    add_special_tokens=False)  # we handle special tokens elsewhere
 
-    # n_files = (args.n_iter*args.batch_size*args.accum_iter)/file_size # if args.n_iter == 0, we take evrything
     train_dataset, val_dataset, train_weights = get_train_val_test(args.data_file, tokenizer, max_length, train_file_num=n_files)
     print(f"mean_percentage: {torch.mean(train_weights)}")
     mean_percentage = 0.5 # min(torch.mean(train_weights) * 8, 0.5)  # reducing the effect on loss function
     class_weights = [1/(1-mean_percentage), 1/mean_percentage] #[1.136, 8.34] # The median of exon proportion is ~12%, therefore weights is 1/0.88 and 1/0.12
     class_weights = torch.tensor(class_weights).to(device)
 
-    # sampler = WeightedRandomSampler(train_weights, min(n_iter, len(train_dataset)), replacement=False) # len(train_dataset), replacement=False
-    train_generator = DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer)) # , sampler=sampler
+    train_generator = DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer))
     curr_step = 0
     save_iter = args.save_interval  # next save
     for epoch in range(1, args.epochs + 1):
@@ -162,7 +157,6 @@ if __name__ == '__main__':
     parser.add_argument('--save-prefix', help='path prefix for saving models')
     parser.add_argument('--tags', default='splicing', help='tags for comet-ml experiment')
     parser.add_argument('--device', type=int, default=-1, help='compute device to use')
-    parser.add_argument('--debug', action='store_true')
     parser.set_defaults(debug=False)
     args = parser.parse_args()
 

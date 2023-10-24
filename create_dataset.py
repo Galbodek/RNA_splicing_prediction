@@ -6,7 +6,7 @@ import glob
 import os
 
 
-PROJECT_DIR = '/davidb/ellarannon/splicing/' #'/sternadi/nobackup/volume1/ellarannon/splicing/'
+PROJECT_DIR = '/davidb/ellarannon/splicing/'
 
 
 class ClassificationDataset(torch.utils.data.Dataset): # IterableDataset
@@ -14,7 +14,7 @@ class ClassificationDataset(torch.utils.data.Dataset): # IterableDataset
         self.dataset = dataset
 
     def __process_example(self, example):
-        X, y = torch.Tensor(example['input_ids']).squeeze(0).to(dtype=torch.int32), example['label']#torch.LongTensor(example['labels']).squeeze(0)
+        X, y = torch.Tensor(example['input_ids']).squeeze(0).to(dtype=torch.int32), example['label']
         return X, y
 
     def __getitem__(self, idx):
@@ -26,9 +26,6 @@ class ClassificationDataset(torch.utils.data.Dataset): # IterableDataset
 
     def __len__(self):
         return len(self.dataset)
-
-    # def set_epoch(self, epoch):
-    #     self.dataset.set_epoch(epoch)
 
 
 def get_weight(labels, epsilon=0.1, max_weight=0.1):
@@ -50,17 +47,10 @@ def split_dataset(dataset):
 def encode(data, tokenizer, max_length):
     input = tokenizer.encode(data['unspliced_transcript'],
           add_special_tokens=False,
-          # padding='max_length', # Padding in collate batch
           truncation=True,
           max_length=max_length,
-          # return_attention_mask=True,
-          # return_token_type_ids=True,
           return_tensors='pt')
 
-    # # adding padding (to max len) to the left like the tokenizer
-    # output = nn.ConstantPad1d((max_length - len(data['coding_seq']), 0), 0)(torch.LongTensor(data['coding_seq']))
-    # return {'input_ids': input, 'labels': output}
-    # return {'input_ids': input, 'labels': torch.LongTensor(data['coding_seq'][:max_length]), 'weight': get_weight(data['coding_seq'][:max_length])}
     return {'input_ids': input, 'label': data['class'], 'weight': 1} # data['coding_seq'] # TODO see if we need to change weight
 
 
@@ -69,14 +59,22 @@ def get_train_val_test(data_dir, tokenizer, max_length, train_file_num=0):
     if train_file_num > 0:
         file_mapping['train'] = [file_path for file_path in file_mapping['train'] if int(file_path.split('train_data_file_')[1].replace(".json", "")) < train_file_num]
     dataset = load_dataset('json', data_files=file_mapping, cache_dir=os.path.join(PROJECT_DIR, "cache"), field='data') # , streaming=True
-    # dataset = split_dataset(dataset)
     train = dataset['train'].map(lambda x: encode(x, tokenizer, max_length), remove_columns=['unspliced_transcript', 'class'])
     train_weights = torch.Tensor([s['weight'] for s in train])
-    # test set will be loaded individualy in other func
-    # test = dataset['test'].map(lambda x: encode(x, tokenizer, max_length), remove_columns=['unspliced_transcript', 'coding_seq'])
     val = dataset['valid'].map(lambda x: encode(x, tokenizer, max_length), remove_columns=['unspliced_transcript', 'class'])
     train_dataset, val_dataset = ClassificationDataset(train), ClassificationDataset(val)
     return train_dataset, val_dataset, train_weights
+
+
+def get_validation(data_dir, tokenizer, max_length, val_file_num=0):
+    file_mapping = {'valid': glob.glob(f"{data_dir}/val_data_file_*.json")}
+    if val_file_num > 0:
+        file_mapping['valid'] = [file_path for file_path in file_mapping['valid'] if int(file_path.split('val_data_file_')[1].replace(".json", "")) < val_file_num]
+
+    dataset = load_dataset('json', data_files=file_mapping, cache_dir=os.path.join(PROJECT_DIR, "cache"), field='data') # , streaming=True
+    val = dataset['valid'].map(lambda x: encode(x, tokenizer, max_length), remove_columns=['unspliced_transcript', 'class'])
+    val_dataset = ClassificationDataset(val)
+    return val_dataset
 
 
 def get_test(data_dir, tokenizer, max_length):

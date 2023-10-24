@@ -1,7 +1,6 @@
 import gc
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
 from sklearn.metrics import roc_auc_score, balanced_accuracy_score, precision_recall_fscore_support, confusion_matrix, precision_recall_curve, roc_curve, auc, matthews_corrcoef
@@ -20,8 +19,6 @@ def collate_batch(batch, tokenizer):
     # sort in descending order for batching, padding to the left - reverse the list and create tensors, pad and flip
     seqs = pad_sequence([seqs[i].flip(dims=[0]) for i in sorted_inds], batch_first=True, padding_value=tokenizer.pad_token_id).flip(dims=[1])
 
-    # sort in descending order for batching, padding to the left - reverse the list and create tensors, pad and flip
-    # labels = pad_sequence([labels[i].flip(dims=[0]) for i in sorted_inds], batch_first=True).flip(dims=[1])
     labels = torch.LongTensor(labels)
     return seqs, labels
 
@@ -62,8 +59,6 @@ def get_loss(model, x, y,  weights, device):
     clear_cache()
     x, y = x.to(device), y.to(device)
     logits = model(x).to(device)
-    # y = y.view((y.shape[0] * y.shape[1]))
-    # logits = logits.view((logits.shape[0] * logits.shape[1], logits.shape[2]))
     loss = F.cross_entropy(logits, y,  weight=weights)
     metrics = compute_metrics(y.cpu().detach(), logits.cpu().detach())
     return loss, metrics
