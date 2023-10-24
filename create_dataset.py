@@ -64,8 +64,10 @@ def encode(data, tokenizer, max_length):
     return {'input_ids': input, 'label': data['class'], 'weight': 1} # data['coding_seq'] # TODO see if we need to change weight
 
 
-def get_train_val_test(data_dir, tokenizer, max_length):
-    file_mapping = {'train': glob.glob(f"{data_dir}/train_data_file_*.json"), 'test': glob.glob(f"{data_dir}/test_data_file_*.json"), "valid":glob.glob(f"{data_dir}/val_data_file_*.json")}
+def get_train_val_test(data_dir, tokenizer, max_length, train_file_num=0):
+    file_mapping = {'train': glob.glob(f"{data_dir}/train_data_file_*.json"), "valid":glob.glob(f"{data_dir}/val_data_file_*.json")}
+    if train_file_num > 0:
+        file_mapping['train'] = [file_path for file_path in file_mapping['train'] if int(file_path.split('train_data_file_')[1].replace(".json", "")) < train_file_num]
     dataset = load_dataset('json', data_files=file_mapping, cache_dir=os.path.join(PROJECT_DIR, "cache"), field='data') # , streaming=True
     # dataset = split_dataset(dataset)
     train = dataset['train'].map(lambda x: encode(x, tokenizer, max_length), remove_columns=['unspliced_transcript', 'class'])

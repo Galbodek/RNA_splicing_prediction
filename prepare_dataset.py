@@ -2,7 +2,7 @@ import json
 from sklearn.model_selection import train_test_split, GroupShuffleSplit
 import numpy as np
 
-data_dir = '/davidb/ellarannon/splicing/updated_all_data_human_600/'
+data_dir = '/davidb/ellarannon/splicing/updated_all_data_human_1000/'
 
 def remove_outliers(data, percentage=0.02):
 	print(np.median([sum(d['coding_seq']) / len(d['coding_seq']) for d in data]))
@@ -18,7 +18,7 @@ def split_data(data, chunk_size, prefix):
 
 
 
-data_file = "/davidb/ellarannon/splicing/human_data_600_train.json"
+data_file = "/davidb/ellarannon/splicing/human_data_1000_train.json"
 chunk_size = 5000 # length is ~ 1/1000 from the original, so 500*1000
 
 with open(data_file, 'r') as fin:

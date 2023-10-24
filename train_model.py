@@ -11,6 +11,8 @@ import json
 
 
 pretrained_model_name = 'hyenadna-medium-160k-seqlen'
+file_size = 5000
+n_files = 191 # number of file in the 10K case
 max_length = 160000
 
 
@@ -22,11 +24,10 @@ def define_experiment(args):
     return experiment
 
 
-def log_experiment(experiment, metrics, loss, step, epoch):
+def log_experiment(experiment, metrics, step, epoch):
     experiment.log_confusion_matrix(matrix=metrics.pop('confusion_matrix'), step=step, epoch=epoch)
     # metrics['confusion_matrix'] = json.dumps(metrics['confusion_matrix'].tolist())
     experiment.log_metrics(metrics, step=step, epoch=epoch)
-    experiment.log_metrics({"loss": loss}, step=step, epoch=epoch)
 
 
 def save_model(model, save_prefix, batch_num, epoch, device):
@@ -84,16 +85,15 @@ def main(args):
     tokenizer = CharacterTokenizer(characters=['A', 'C', 'G', 'T', 'N'], model_max_length=max_length + 2,  # to account for special tokens, like EOS
                                    add_special_tokens=False)  # we handle special tokens elsewhere
 
-    train_dataset, val_dataset, train_weights = get_train_val_test(args.data_file, tokenizer, max_length)
+    # n_files = (args.n_iter*args.batch_size*args.accum_iter)/file_size # if args.n_iter == 0, we take evrything
+    train_dataset, val_dataset, train_weights = get_train_val_test(args.data_file, tokenizer, max_length, train_file_num=n_files)
     print(f"mean_percentage: {torch.mean(train_weights)}")
     mean_percentage = 0.5 # min(torch.mean(train_weights) * 8, 0.5)  # reducing the effect on loss function
     class_weights = [1/(1-mean_percentage), 1/mean_percentage] #[1.136, 8.34] # The median of exon proportion is ~12%, therefore weights is 1/0.88 and 1/0.12
     class_weights = torch.tensor(class_weights).to(device)
 
-
-    n_iter = args.n_iter*args.batch_size if args.n_iter > 0 else len(train_dataset)
-    sampler = WeightedRandomSampler(train_weights, min(n_iter, len(train_dataset)), replacement=False) # len(train_dataset), replacement=False
-    train_generator = DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer), sampler=sampler)
+    # sampler = WeightedRandomSampler(train_weights, min(n_iter, len(train_dataset)), replacement=False) # len(train_dataset), replacement=False
+    train_generator = DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer)) # , sampler=sampler
     curr_step = 0
     save_iter = args.save_interval  # next save
     for epoch in range(1, args.epochs + 1):
@@ -107,22 +107,21 @@ def main(args):
             loss, metrics = get_loss(model, x, y, class_weights, device)
             loss = loss / args.accum_iter # normalize loss to account for batch accumulation
 
-
             # Backpropagation
             loss.backward()
             loss_estimate = loss.item()
-
 
              # weights update
             if ((batch_num + 1) % args.accum_iter == 0) or (batch_num + 1 == len(train_generator)):
                 optimizer.step()
                 optimizer.zero_grad()
+                experiment.log_metrics({"loss": loss_estimate*args.accum_iter}, step=round((batch_num + curr_step) / args.accum_iter), epoch=epoch)
 
             # clip the gradients if needed
             if not np.isinf(args.clip):
                 nn.utils.clip_grad_norm_(model.classification_head.parameters(), args.clip)
 
-            log_experiment(experiment, metrics, loss_estimate*args.accum_iter, batch_num + curr_step, epoch)
+            log_experiment(experiment, metrics, batch_num + curr_step, epoch)
 
             # clear the cache
             clear_cache()
