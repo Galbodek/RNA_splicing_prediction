@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from HyenaDNA import HyenaDNAPreTrainedModel
 
-dir_path = '/davidb/ellarannon/splicing/' # '/sternadi/nobackup/volume1/ellarannon/splicing'
+dir_path = '/davidb/ellarannon/splicing/'
 
 
 class MyHyenaDNA(PreTrainedModel):
@@ -11,9 +11,6 @@ class MyHyenaDNA(PreTrainedModel):
         super(PreTrainedModel, self).__init__()
         self.hynedaDNA = HyenaDNAPreTrainedModel.from_pretrained(f'{dir_path}/checkpoints', pretrained_model_name, use_head=True, device=device)
         dim = 256  # hyenaDNA embeddings size
-        # self.dropout = nn.Dropout(p=dropout)
-        # self.lstm = nn.LSTM(dim, hidden_size, batch_first=True, bidirectional=True, num_layers=num_of_layers, dropout=dropout)
-        # self.proj = nn.Linear(2*hidden_size, 2)  # 2 since we are using binary classification
         # layers = [nn.Dropout(p=dropout)]
         # for i in range(num_of_layers):
         #     layers.append(nn.Linear(dim, hidden_size))
@@ -25,11 +22,8 @@ class MyHyenaDNA(PreTrainedModel):
         # self.classification_head = nn.Sequential(*layers)
 
     def forward(self, x, **kwargs):
-        # with torch.no_grad():
         outputs = self.hynedaDNA(x)
         # hidden_state = torch.mean(self.hynedaDNA(x), dim=1)
-        # # h = self.lstm(self.dropout(hidden_state))[0]
-        # # outputs = self.proj(h)
         # outputs = self.classification_head(hidden_state)
         return outputs
 

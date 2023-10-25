@@ -53,7 +53,6 @@ def main(args):
         pickle.dump(all_results, fout)
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser('Evaluating the model for splicing detection')
     # test datasets
