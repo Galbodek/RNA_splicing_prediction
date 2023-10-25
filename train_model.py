@@ -95,9 +95,9 @@ def main(args):
     # sampler = WeightedRandomSampler(train_weights, min(n_iter, len(train_dataset)), replacement=False) # len(train_dataset), replacement=False
     train_generator = DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=lambda b: collate_batch(b, tokenizer)) # , sampler=sampler
     curr_step = 0
-    save_iter = args.save_interval  # next save
     for epoch in range(1, args.epochs + 1):
         print(f'----- starting epoch = {epoch} -----')
+        save_iter = args.save_interval  # next save
         # Training
         model.train()
         # train_dataset.set_epoch(epoch) # Shuffling data for each epoch
@@ -131,11 +131,12 @@ def main(args):
                 save_model(model, save_prefix, batch_num, epoch, device)
 
         curr_step += batch_num
-
-    # Running Model On Validation Set
-    run_model_on_val(model, val_dataset, device, args.batch_size, tokenizer)
+        save_model(model, save_prefix, batch_num, epoch, device)
 
     save_model(model, save_prefix, batch_num, epoch, device)
+    print('finished training')
+    # Running Model On Validation Set
+    run_model_on_val(model, val_dataset, device, args.batch_size, tokenizer)
     experiment.end()
 
 
