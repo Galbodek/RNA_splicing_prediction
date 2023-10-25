@@ -6,3 +6,4 @@
 all_data_human_*/*
 updated_all_data_human_*/*
 *.json
+constants.py
