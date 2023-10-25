@@ -75,8 +75,10 @@ def get_validation(data_dir, tokenizer, max_length, val_file_num=0):
     return val_dataset
 
 
-def get_test(data_dir, tokenizer, max_length):
+def get_test(data_dir, tokenizer, max_length, test_file_num=0):
     file_mapping = {'test': glob.glob(f"{data_dir}/test_data_file_*.json")}
+    if test_file_num > 0:
+        file_mapping['test'] = [file_path for file_path in file_mapping['test'] if int(file_path.split('test_data_file_')[1].replace(".json", "")) < test_file_num]
     dataset = load_dataset('json', data_files=file_mapping, cache_dir=os.path.join(DIR_PATH, "cache"), field='data') # , streaming=True
     test = dataset['test'].map(lambda x: encode(x, tokenizer, max_length), remove_columns=['unspliced_transcript', 'class'])
     test_dataset = ClassificationDataset(test)
