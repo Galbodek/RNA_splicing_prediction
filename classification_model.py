@@ -2,14 +2,13 @@ from transformers import PreTrainedModel
 import torch
 import torch.nn as nn
 from HyenaDNA import HyenaDNAPreTrainedModel
-
-dir_path = '/davidb/ellarannon/splicing/'
+from constants import DIR_PATH
 
 
 class MyHyenaDNA(PreTrainedModel):
     def __init__(self, pretrained_model_name, device, num_of_layers=2, hidden_size=128, dropout=0.3):
         super(PreTrainedModel, self).__init__()
-        self.hynedaDNA = HyenaDNAPreTrainedModel.from_pretrained(f'{dir_path}/checkpoints', pretrained_model_name, use_head=True, device=device)
+        self.hynedaDNA = HyenaDNAPreTrainedModel.from_pretrained(f'{DIR_PATH}/checkpoints', pretrained_model_name, use_head=True, device=device)
         dim = 256  # hyenaDNA embeddings size
         # layers = [nn.Dropout(p=dropout)]
         # for i in range(num_of_layers):

@@ -1,10 +1,14 @@
 import json
 from sklearn.model_selection import GroupShuffleSplit
 import numpy as np
+import os
+from constants import DIR_PATH
 
 
 length = 1000
-data_dir = f'/davidb/ellarannon/splicing/updated_all_data_human_{length}/'
+data_dir = os.path.join(DIR_PATH, f'updated_all_data_human_{length}/')
+data_file = os.path.join(DIR_PATH, f"human_data_{length}_train.json")
+chunk_size = 5000
 
 
 def remove_outliers(data, percentage=0.02):
@@ -19,9 +23,6 @@ def split_data(data, chunk_size, prefix):
 		with open(file_name, 'w') as fout:
 			json.dump(sd, fout)
 
-
-data_file = f"/davidb/ellarannon/splicing/human_data_{length}_train.json"
-chunk_size = 5000
 
 with open(data_file, 'r') as fin:
 	all_data = json.load(fin)

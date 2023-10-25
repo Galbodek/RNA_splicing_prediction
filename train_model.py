@@ -3,9 +3,10 @@ from classification_model import MyHyenaDNA
 from HyenaDNA import CharacterTokenizer
 from create_dataset import get_train_val_test
 import torch
-from torch.utils.data import DataLoader, WeightedRandomSampler
+from torch.utils.data import DataLoader
 import torch.nn as nn
 import numpy as np
+from constants import API_KEY
 from utilities import clear_cache, get_loss, collate_batch, compute_metrics
 
 
@@ -15,7 +16,7 @@ max_length = 160000
 
 
 def define_experiment(args):
-    experiment = Experiment(api_key="OUSdYva9STAffLftJFYaSyah4", project_name="splicing")
+    experiment = Experiment(api_key=API_KEY, project_name="splicing")
     experiment.add_tags(args.tags.split(','))
     parameters = {'batch_size': args.batch_size, 'learning_rate': args.lr}
     experiment.log_parameters(parameters, prefix='train')
