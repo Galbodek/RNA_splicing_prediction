@@ -142,7 +142,7 @@ if __name__ == '__main__':
     # training dataset
     parser.add_argument('--data_file', default='', help='path to the dataset train')
     # embedding model architecture
-    parser.add_argument('model', nargs='?', help='pretrained model (optional)')
+    parser.add_argument('--model', nargs='?', help='pretrained model (optional)')
     parser.add_argument('--h_dim', type=int, default=128, help='dimension of hidden units of first linear layer')
     parser.add_argument('--num_layers', type=int, default=2, help='number of linear layers')
     parser.add_argument('--dropout', type=float, default=0.3, help='dropout rate')
@@ -159,7 +159,6 @@ if __name__ == '__main__':
     parser.add_argument('--save-prefix', help='path prefix for saving models')
     parser.add_argument('--tags', default='splicing', help='tags for comet-ml experiment')
     parser.add_argument('--device', type=int, default=-1, help='compute device to use')
-    parser.set_defaults(debug=False)
     args = parser.parse_args()
 
     main(args)

@@ -35,8 +35,8 @@ class MyHyenaDNA(PreTrainedModel):
 
     @staticmethod
     def load_pretrained(path, pretrained_model_name, device):
-        _, nout, hidden, layers, dropout, _ = os.path.basename(path).split('__')
-        model = MyHyenaDNA(pretrained_model_name, device, int(layers), int(hidden), dropout=float(dropout))
+        hidden, layers, dropout = os.path.basename(path).split('__')[2:5]
+        model = MyHyenaDNA(pretrained_model_name, device, int(layers), int(hidden.strip('_')), dropout=float(dropout))
         state_dict = torch.load(path, map_location=torch.device('cpu'))
         model.load_state_dict(state_dict)
         return model
