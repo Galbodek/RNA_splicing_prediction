@@ -29,9 +29,11 @@ This repository contains multiple files:
 
 5- **utilities.py** - File for utility functions, such as calculating training loss and other performance metrics, and preparing data batch.
 
-6- **run_model_training_gpu.sh** - bash file for running for training the model on specific-length data on the server GPUs.
+6- **checkpoints directory** - Directory with the configuration files for the HyenaDNA models.
 
-7- **checkpoints directory** - Directory with the configuration files for the HyenaDNA models.
+**Usage:**
+In order to train the model, you should use the following command:
+python <path_to_code_dir>/train_model.py --data_file <path_to_data_dir> --save-prefix <model_output_prefix> --dropout <dropout> -e <epoch_num> --batch_size <batch_size> --device <device> --num_layers <layer_num> -ac <batch_num_to_accumulate> --lr <learning_rate> --save-interval <save_interval> --weight_decay <weight_decay>
 
 
 For further information, you can contact us by mail: ellarannon@mail.tau.ac.il, galbodek@mail.tau.ac.il, kerendanan1@mail.tau.ac.il
