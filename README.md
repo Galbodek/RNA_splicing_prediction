@@ -1,5 +1,5 @@
 # Application of HyenaDNA for RNA Splicing Prediction
-This repository contains the final project of the NLP course completed by Ella Rannon, Gal Bodek and Keren Danan.
+This repository contains the final project of the NLP course completed by Ella Rannon, Gal Bodek and Keren Danan with the help of Edo Dotan.
 In this project, we investigated the use of HyenaDNA, a novel genomic foundational model, for exon prediction, exploring various input lengths and model
 architectures.
 
