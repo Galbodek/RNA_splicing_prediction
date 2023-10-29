@@ -1,6 +1,6 @@
 # Application of HyenaDNA for RNA Splicing Prediction
 This repository contains the final project of the NLP course completed by Ella Rannon, Gal Bodek and Keren Danan.
-In this project, we investigated theuse of HyenaDNA, a novel genomic foundational model, for exon prediction, exploring various input lengths and model
+In this project, we investigated the use of HyenaDNA, a novel genomic foundational model, for exon prediction, exploring various input lengths and model
 architectures.
 
 This repository contains multiple files: 
@@ -11,25 +11,27 @@ This repository contains multiple files:
 
 2- **create_data_script_loaded.py** - Python file generating data from encoded sequences as described in our methods. 
 
-3- **prepare_dataset.py** - Python file loading the data json file generated, and splitting it for the model input.
+3- **prepare_dataset.py** - Python file loading the data json file generated, splitting it to train and validation sets, and then saving them in smaller json files for the model input.
 
-4- **create_dataset.py** - Python file creating class for the classification of the data during the run of the main model.
+4- **create_dataset.py** - Python file for the creation of the dataset object used for classification during the run of the main model.
 
 5- **analysis_script.py** - Python file generating statistics about the data. 
 
 **Model:**
 
-1- **HyenaDNA.py** - the model itself
+1- **HyenaDNA.py** - The model itself, as published by the original authors of HyenaDNA paper.
 
-2- **model_eval.py** - 
+2- **classification_model.py** - Class of the classification model used in this project, which uses a pre-trained HyenaDNA model and additional dense layers.
 
-3- **evalutate_model.py** -
+3- **train_model.py** - Train the model and evaluate it on the validation set.
 
-4- **utilities.py**
+4- **evalutate_model.py** - Run the trained model on a validation \ test set and reporting the results.
 
-5- **run_model_training_gpu.sh** - bash file creatingn run for training the model on specific-length data on the server GPUs.
+5- **utilities.py** - File for utility functions, such as calculating training loss and other performance metrics, and preparing data batch.
 
-6- **checkpoints directory** - 
+6- **run_model_training_gpu.sh** - bash file for running for training the model on specific-length data on the server GPUs.
+
+7- **checkpoints directory** - Directory with the configuration files for the HyenaDNA models.
 
 
-For further information you can contact us by mail: ellarannon@mail.tau.ac.il, galbodek@mail.tau.ac.il, kerendanan1@mail.tau.ac.il
+For further information, you can contact us by mail: ellarannon@mail.tau.ac.il, galbodek@mail.tau.ac.il, kerendanan1@mail.tau.ac.il
