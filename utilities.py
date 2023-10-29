@@ -57,8 +57,9 @@ def clear_cache():
 
 def get_loss(model, x, y,  weights, device):
     clear_cache()
-    x, y = x.to(device), y.to(device)
+    x = x.to(device)
     logits = model(x).to(device)
-    loss = F.cross_entropy(logits, y,  weight=weights)
-    metrics = compute_metrics(y.cpu().detach(), logits.cpu().detach())
-    return loss, metrics
+    loss = F.cross_entropy(logits, y.to(device),  weight=weights)
+    y, logits = y.cpu().detach(), logits.cpu().detach()
+    metrics = compute_metrics(y, logits)
+    return loss, metrics, logits

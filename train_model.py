@@ -42,7 +42,7 @@ def save_model(model, save_prefix, batch_num, epoch, device):
 
 def run_model_on_val(model, dataset, device, batch_size, tokenizer):
     model.eval()
-    all_y, all_logits = [] , []
+    all_y, all_logits = [], []
     data_generator = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda b: collate_batch(b, tokenizer))
     for batch_num, (x, y) in enumerate(data_generator):
         logits = model(x.to(device))
@@ -100,7 +100,7 @@ def main(args):
         for batch_num, (x, y) in enumerate(train_generator):
             # clear the cache
             clear_cache()
-            loss, metrics = get_loss(model, x, y, class_weights, device)
+            loss, metrics, _ = get_loss(model, x, y, class_weights, device)
             loss = loss / args.accum_iter # normalize loss to account for batch accumulation
 
             # Backpropagation

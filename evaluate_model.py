@@ -6,6 +6,7 @@ import torch
 from torch.utils.data import DataLoader
 from utilities import clear_cache, get_loss, collate_batch, compute_metrics
 from train_model import define_experiment, log_experiment
+import json
 
 
 pretrained_model_name = 'hyenadna-medium-160k-seqlen'
@@ -42,11 +43,10 @@ def main(args):
     for batch_num, (x, y) in enumerate(data_generator):
         # clear the cache
         clear_cache()
-        logits = model(x.to(device))
+        loss, metrics, logits = get_loss(model, x, y, class_weights, device)
         all_y.append(y.cpu().detach())
-        all_logits.append(logits.cpu().detach())
+        all_logits.append(logits)
 
-        loss, metrics = get_loss(model, x, y, class_weights, device)
         loss_estimate = loss.item()
         experiment.log_metrics({"loss": loss_estimate}, step=batch_num, epoch=0)
         log_experiment(experiment, metrics, batch_num, 0)
@@ -57,7 +57,16 @@ def main(args):
     labels = torch.concatenate(all_y, dim=0)
     logits = torch.concatenate(all_logits, dim=0)
     print(compute_metrics(labels, logits))
+
+    if args.test:
+        output_path = args.model.replace(".sav", '_results_on_test.json')
+        probs = torch.softmax(logits, dim=-1)
+        res_dict = {'y': labels.tolist(), 'prob': probs.tolist()}
+        with open(output_path, 'w') as fout:
+            json.dump(res_dict, fout)
+
     experiment.end()
+
 
 
 if __name__ == '__main__':
